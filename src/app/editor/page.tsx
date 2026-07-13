@@ -9,6 +9,7 @@ import { downloadPattern, downloadShoppingList } from '@/utils/imageDownloader';
 import ModeSwitcher from '@/components/editor/ModeSwitcher';
 import LeftToolbar from '@/components/editor/LeftToolbar';
 import CanvasPreview from '@/components/editor/CanvasPreview';
+import LargePreview from '@/components/editor/LargePreview';
 import RightPanel from '@/components/editor/RightPanel';
 import PaletteSelector from '@/components/editor/PaletteSelector';
 import SliderControls from '@/components/editor/SliderControls';
@@ -138,6 +139,7 @@ function EditorContent() {
             <SliderControls granularity={state.granularity} threshold={state.similarityThreshold}
               onGranularityChange={g => { setGranularity(g); doRegenerate(); }}
               onThresholdChange={t => { setThreshold(t); doRegenerate(); }} />
+            <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} cellSize={16} />
             <ColorStatsPanel colorCounts={state.colorCounts} excludedColors={excludedColors} onToggleExclude={handleToggleExclude} />
             <ExportButtons hasData={!!state.mappedPixelData}
               onDownload={() => state.mappedPixelData && state.gridDimensions && state.colorCounts &&

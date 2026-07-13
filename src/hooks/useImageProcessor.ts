@@ -141,9 +141,10 @@ export function useImageProcessor() {
 
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
     data = removeBackground(data, M, N);
-
-    // Run merge-by-frequency (always, not just AI mode — this is the crucial quality step)
-    data = mergeSimilarColors(data, M, N, palette, threshold);
+    // Only run merge when threshold > 0 (user can disable by setting to 0)
+    if (threshold > 0) {
+      data = mergeSimilarColors(data, M, N, palette, threshold);
+    }
     // AI mode adds extra cleanup
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
