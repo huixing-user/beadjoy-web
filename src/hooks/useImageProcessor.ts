@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from 'react';
 import { EditorMode, ColorSystem, PaletteColor, MappedPixel, ColorCount, ProcessingState } from '@/types/pixelation';
 import { calculatePixelGrid, hexToRgb } from '@/utils/pixelation';
 import { aiOptimize } from '@/utils/aiOptimizer';
-import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 50;
@@ -76,13 +75,10 @@ export function useImageProcessor() {
     const palette = buildPalette(state.selectedColorSystem);
     const fallback: PaletteColor = palette[0] || { key: '?', hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 } };
 
-    // Step 1: Initial color mapping (dominant per cell)
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
-    // Step 2: Background removal
     data = removeBackground(data, M, N);
-    // Step 3: Merge similar colors (the KEY algorithm from reference project)
-    data = mergeSimilarColors(data, M, N, palette, threshold);
-    // Step 4: AI mode extra cleanup
+
+    // AI mode extra cleanup
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
       data = result.optimizedData;
