@@ -51,7 +51,7 @@ export function aiOptimize(params: AiOptimizeParams): AiOptimizeResult {
     }
   }
 
-  // 2. Edge enhancement — increase contrast between adjacent different-color cells
+  // 2. Edge enhancement — increase contrast for adjacent different-color cells
   for (let j = 1; j < M - 1; j++) {
     for (let i = 1; i < N - 1; i++) {
       const cell = result[j][i];
@@ -65,8 +65,12 @@ export function aiOptimize(params: AiOptimizeParams): AiOptimizeResult {
         if (!neighborRgb) continue;
         const dist = colorDistance(cellRgb, neighborRgb);
         if (dist < 15) {
-          const darken = (v: number) => Math.max(0, v - 20);
-          result[j][i].color = `#${darken(cellRgb.r).toString(16).padStart(2,'0')}${darken(cellRgb.g).toString(16).padStart(2,'0')}${darken(cellRgb.b).toString(16).padStart(2,'0')}`;
+          // Find a darker palette color instead of modifying hex directly
+          const darken = (v: number) => Math.max(0, v - 25);
+          const darkerRgb = { r: darken(cellRgb.r), g: darken(cellRgb.g), b: darken(cellRgb.b) };
+          const closest = findClosestPaletteColor(darkerRgb, palette);
+          result[j][i].color = closest.hex;
+          result[j][i].key = closest.key;
           improvements.edgesEnhanced++;
           break;
         }

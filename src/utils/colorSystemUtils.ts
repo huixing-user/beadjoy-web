@@ -76,7 +76,8 @@ export function getDisplayColorKey(hexValue: string, colorSystem: ColorSystem): 
     return colorMapping[colorSystem];
   }
 
-  return '?'; // 如果找不到映射，返回 '?'
+  // 查找最接近的色板颜色
+  return getColorKeyByHex(normalizedHex, colorSystem);
 }
 
 // 将色号键转换到hex值（支持任意色号系统）
@@ -103,18 +104,45 @@ export function isValidColorInSystem(hexValue: string, colorSystem: ColorSystem)
 }
 
 // 通过hex值获取指定色号系统的色号
+// 如果找不到精确匹配，自动查找最接近的色板颜色
 export function getColorKeyByHex(hexValue: string, colorSystem: ColorSystem): string {
   // 标准化hex值（确保大写）
   const normalizedHex = hexValue.toUpperCase();
 
-  // 查找映射
+  // 查找精确映射
   const mapping = typedColorSystemMapping[normalizedHex];
   if (mapping && mapping[colorSystem]) {
     return mapping[colorSystem];
   }
 
-  // 如果找不到映射，返回 '?'
+  // 如果找不到精确匹配，在色板中寻找最接近的hex值
+  const targetRgb = hexToRgbSimple(normalizedHex);
+  if (targetRgb) {
+    let minDist = Infinity;
+    let bestKey = '?';
+    for (const [hex, m] of Object.entries(typedColorSystemMapping)) {
+      const paletteRgb = hexToRgbSimple(hex);
+      if (!paletteRgb || !m[colorSystem]) continue;
+      const dr = targetRgb.r - paletteRgb.r;
+      const dg = targetRgb.g - paletteRgb.g;
+      const db = targetRgb.b - paletteRgb.b;
+      const dist = dr * dr + dg * dg + db * db;
+      if (dist < minDist) { minDist = dist; bestKey = m[colorSystem]; }
+    }
+    return bestKey;
+  }
+
   return '?';
+}
+
+// 简单的hex转rgb（不需要引入额外依赖）
+function hexToRgbSimple(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  } : null;
 }
 
 // 将hex颜色转换为HSL
