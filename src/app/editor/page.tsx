@@ -17,6 +17,7 @@ import ExportButtons from '@/components/editor/ExportButtons';
 import StatusBar from '@/components/editor/StatusBar';
 import BouncingBead from '@/components/shared/BouncingBead';
 import UploadZone from '@/components/shared/UploadZone';
+import ImageCropper from '@/components/editor/ImageCropper';
 
 function EditorContent() {
   const searchParams = useSearchParams();
@@ -25,6 +26,7 @@ function EditorContent() {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [excludedColors, setExcludedColors] = useState<Set<string>>(new Set());
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null);
+  const [pendingCropSrc, setPendingCropSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -44,11 +46,17 @@ function EditorContent() {
   const handleImageSelect = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => { imgRef.current = img; setImageLoaded(true); processImage(img); };
-      img.src = reader.result as string;
+      // Show cropper first instead of processing immediately
+      setPendingCropSrc(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropConfirm = (croppedSrc: string) => {
+    setPendingCropSrc(null);
+    const img = new Image();
+    img.onload = () => { imgRef.current = img; setImageLoaded(true); processImage(img); };
+    img.src = croppedSrc;
   };
 
   const handleModeChange = (mode: EditorMode) => {
@@ -83,6 +91,16 @@ function EditorContent() {
     });
     alert('✅ 已分享到画廊！');
   };
+
+  if (pendingCropSrc) {
+    return (
+      <ImageCropper
+        imageSrc={pendingCropSrc}
+        onCropConfirm={handleCropConfirm}
+        onCancel={() => setPendingCropSrc(null)}
+      />
+    );
+  }
 
   if (!imageLoaded) {
     return (
