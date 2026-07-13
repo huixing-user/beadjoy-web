@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { EditorMode, ColorSystem, PaletteColor, MappedPixel, GridDimensions, ColorCount, ProcessingState } from '@/types/pixelation';
-import { calculatePixelGrid, hexToRgb, findClosestPaletteColor, colorDistance } from '@/utils/pixelation';
+import { EditorMode, ColorSystem, PaletteColor, MappedPixel, ColorCount, ProcessingState } from '@/types/pixelation';
+import { calculatePixelGrid, hexToRgb } from '@/utils/pixelation';
 import { aiOptimize } from '@/utils/aiOptimizer';
+import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 50;
-const DEFAULT_THRESHOLD = 20;
+const DEFAULT_THRESHOLD = 30;
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
 function buildPalette(colorSystem: ColorSystem): PaletteColor[] {
@@ -55,7 +56,6 @@ export function useImageProcessor() {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
-  const originalImageDataUrlRef = useRef<string | null>(null);
 
   const compute = useCallback((imageElement: HTMLImageElement, overrides?: { mode?: EditorMode; granularity?: number; threshold?: number }) => {
     setIsProcessing(true);
@@ -76,10 +76,13 @@ export function useImageProcessor() {
     const palette = buildPalette(state.selectedColorSystem);
     const fallback: PaletteColor = palette[0] || { key: '?', hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 } };
 
+    // Step 1: Initial color mapping (dominant per cell)
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
+    // Step 2: Background removal
     data = removeBackground(data, M, N);
-
-    // AI mode
+    // Step 3: Merge similar colors (the KEY algorithm from reference project)
+    data = mergeSimilarColors(data, M, N, palette, threshold);
+    // Step 4: AI mode extra cleanup
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
       data = result.optimizedData;
