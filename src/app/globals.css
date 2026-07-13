@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #FFF5F7;
+  --color-surface: #FFFFFF;
+  --color-text: #2D3436;
+  --color-candy-pink: #FF6B9D;
+  --color-candy-mint: #4ECDC4;
+  --color-candy-lavender: #C3B1E1;
+  --color-candy-yellow: #FFE66D;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #fce4ec; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #FF6B9D; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #e55a8a; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulseCandy {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-bounce-in { animation: bounceIn 0.5s ease-out; }
+.animate-pulse-candy { animation: pulseCandy 2s ease-in-out infinite; }
