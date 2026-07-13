@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { EditorMode } from '@/types/pixelation';
 import { useImageProcessor } from '@/hooks/useImageProcessor';
@@ -65,9 +65,19 @@ function EditorContent() {
     if (imgRef.current) processImage(imgRef.current, { mode });
   };
 
-  const doRegenerate = () => {
+  const doRegenerate = useCallback(() => {
     if (imgRef.current) processImage(imgRef.current);
-  };
+  }, [processImage]);
+
+  const handleGranularityChange = useCallback((g: number) => {
+    setGranularity(g);
+    if (imgRef.current) processImage(imgRef.current, { granularity: g });
+  }, [setGranularity, processImage]);
+
+  const handleThresholdChange = useCallback((t: number) => {
+    setThreshold(t);
+    if (imgRef.current) processImage(imgRef.current, { threshold: t });
+  }, [setThreshold, processImage]);
 
   const handleToggleExclude = (hex: string) => {
     setExcludedColors(prev => { const n = new Set(prev); n.has(hex) ? n.delete(hex) : n.add(hex); return n; });
@@ -137,8 +147,8 @@ function EditorContent() {
             <PaletteSelector selectedSystem={state.selectedColorSystem} paletteSize={state.paletteSize}
               onSystemChange={setColorSystem} onSizeChange={() => {}} />
             <SliderControls granularity={state.granularity} threshold={state.similarityThreshold}
-              onGranularityChange={g => { setGranularity(g); doRegenerate(); }}
-              onThresholdChange={t => { setThreshold(t); doRegenerate(); }} />
+              onGranularityChange={handleGranularityChange}
+              onThresholdChange={handleThresholdChange} />
             <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} cellSize={16} />
             <ColorStatsPanel colorCounts={state.colorCounts} excludedColors={excludedColors} onToggleExclude={handleToggleExclude} />
             <ExportButtons hasData={!!state.mappedPixelData}
