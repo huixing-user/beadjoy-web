@@ -2,12 +2,12 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { EditorMode, ColorSystem, PaletteColor, MappedPixel, GridDimensions, ColorCount, ProcessingState } from '@/types/pixelation';
-import { calculatePixelGrid, hexToRgb, findClosestPaletteColor } from '@/utils/pixelation';
+import { calculatePixelGrid, hexToRgb, findClosestPaletteColor, colorDistance } from '@/utils/pixelation';
 import { aiOptimize } from '@/utils/aiOptimizer';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 80;
-const DEFAULT_THRESHOLD = 18;
+const DEFAULT_THRESHOLD = 25;
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
 function buildPalette(colorSystem: ColorSystem, excludeHexes: Set<string> = new Set()): PaletteColor[] {
@@ -48,6 +48,69 @@ function removeBackground(data: MappedPixel[][], M: number, N: number): MappedPi
   return result;
 }
 
+/**
+ * CRITICAL: Merge similar colors by frequency (same algorithm as reference project).
+ * This is the key step that makes pixel art look clean — without it, every cell
+ * maps to its own nearest palette color, creating a noisy "mosaic" effect.
+ */
+function mergeSimilarColors(
+  data: MappedPixel[][],
+  M: number,
+  N: number,
+  palette: PaletteColor[],
+  threshold: number,
+): MappedPixel[][] {
+  // Build lookup tables
+  const keyToRgb = new Map<string, { r: number; g: number; b: number }>();
+  const keyToHex = new Map<string, string>();
+  for (const p of palette) {
+    keyToRgb.set(p.key, p.rgb);
+    keyToHex.set(p.key, p.hex);
+  }
+
+  // Count color frequency
+  const freq = new Map<string, number>();
+  for (let j = 0; j < M; j++) {
+    for (let i = 0; i < N; i++) {
+      const cell = data[j][i];
+      if (cell && !cell.isExternal) freq.set(cell.key, (freq.get(cell.key) || 0) + 1);
+    }
+  }
+
+  const sorted = [...freq.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+  const result = data.map(row => row.map(cell => ({ ...cell, isExternal: cell.isExternal ?? false })));
+  const replaced = new Set<string>();
+
+  for (let i = 0; i < sorted.length; i++) {
+    const dominantKey = sorted[i];
+    if (replaced.has(dominantKey)) continue;
+    const dominantRgb = keyToRgb.get(dominantKey);
+    if (!dominantRgb) continue;
+
+    for (let j = i + 1; j < sorted.length; j++) {
+      const minorKey = sorted[j];
+      if (replaced.has(minorKey)) continue;
+      const minorRgb = keyToRgb.get(minorKey);
+      if (!minorRgb) continue;
+
+      const dist = colorDistance(dominantRgb, minorRgb);
+      if (dist < threshold) {
+        replaced.add(minorKey);
+        for (let r = 0; r < M; r++) {
+          for (let c = 0; c < N; c++) {
+            if (result[r][c].key === minorKey && !result[r][c].isExternal) {
+              const hex = keyToHex.get(dominantKey) || '#FFFFFF';
+              result[r][c] = { key: dominantKey, color: hex, isExternal: false };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function useImageProcessor() {
   const [state, setState] = useState<ProcessingState>({
     mappedPixelData: null, gridDimensions: null, colorCounts: null, totalBeadCount: 0,
@@ -79,6 +142,9 @@ export function useImageProcessor() {
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
     data = removeBackground(data, M, N);
 
+    // Run merge-by-frequency (always, not just AI mode — this is the crucial quality step)
+    data = mergeSimilarColors(data, M, N, palette, threshold);
+    // AI mode adds extra cleanup
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
       data = result.optimizedData;

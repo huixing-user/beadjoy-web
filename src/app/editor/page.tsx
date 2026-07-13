@@ -96,7 +96,10 @@ function EditorContent() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex items-center justify-between px-4 py-2 bg-white/50 border-b border-pink-100">
         <ModeSwitcher currentMode={state.mode} onModeChange={handleModeChange} />
-        <button onClick={doRegenerate} className="text-sm text-[#FF6B9D] hover:underline">🔄 重新生成</button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[#2D3436]/40">🖱️ 滚轮缩放 · Ctrl+拖拽平移</span>
+          <button onClick={doRegenerate} className="text-sm text-[#FF6B9D] hover:underline">🔄 重新生成</button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
