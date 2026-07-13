@@ -7,7 +7,7 @@ import { aiOptimize } from '@/utils/aiOptimizer';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 50;
-const DEFAULT_THRESHOLD = 30;
+const DEFAULT_THRESHOLD = 18;
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
 function buildPalette(colorSystem: ColorSystem, excludeHexes: Set<string> = new Set()): PaletteColor[] {
