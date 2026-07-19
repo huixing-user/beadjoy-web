@@ -7,7 +7,7 @@ import { aiOptimize } from '@/utils/aiOptimizer';
 import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
-const DEFAULT_GRANULARITY = 150;  // higher default = more detail
+const DEFAULT_GRANULARITY = 200;  // higher default = more detail
 const DEFAULT_THRESHOLD = 0;  // Start with no merging — user can increase
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 

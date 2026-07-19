@@ -165,7 +165,6 @@ function EditorContent() {
               onThresholdChange={handleThresholdChange}
               onMaxWChange={handleMaxWChange}
               onMaxHChange={handleMaxHChange} />
-            <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} />
             <ColorStatsPanel colorCounts={state.colorCounts} excludedColors={excludedColors} onToggleExclude={handleToggleExclude} />
             <ExportButtons hasData={!!state.mappedPixelData}
               onDownload={() => state.mappedPixelData && state.gridDimensions && state.colorCounts &&
@@ -173,6 +172,13 @@ function EditorContent() {
               onDownloadList={() => state.colorCounts && downloadShoppingList(state.colorCounts, state.totalBeadCount, state.selectedColorSystem)}
               onShareToGallery={handleShareToGallery} />
           </RightPanel>
+        </div>
+      </div>
+
+      {/* Preview row — below canvas, always visible */}
+      <div className="px-4 pb-3 bg-white/30 border-t border-pink-50">
+        <div className="max-w-3xl mx-auto">
+          <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} />
         </div>
       </div>
 

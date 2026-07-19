@@ -186,7 +186,7 @@ export default function LargePreview({ mappedPixelData, gridDimensions }: {
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-[#2D3436]">🔮 拼豆效果预览</h3>
         <div
-          className="overflow-auto max-h-[260px] rounded-2xl border border-gray-100 bg-[#f0f0f0] p-2 cursor-pointer"
+          className="overflow-auto max-h-[200px] rounded-2xl border border-gray-100 bg-[#f0f0f0] p-2 cursor-pointer"
           onClick={() => setExpanded(true)}
           title="点击放大预览"
         >

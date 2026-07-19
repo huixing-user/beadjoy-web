@@ -48,12 +48,12 @@ export default function SliderControls({
       <div>
         <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">⚙️ 精细度</label>
         <div className="flex items-center gap-2">
-          <input type="range" min={10} max={300} value={granularity}
+          <input type="range" min={10} max={500} value={granularity}
             onChange={e => onGranularityChange(Number(e.target.value))}
             className="flex-1 accent-[#FF6B9D] h-2 rounded-full cursor-pointer" />
-          <IntInput value={granularity} min={10} max={300} onChange={onGranularityChange} className="w-16" />
+          <IntInput value={granularity} min={10} max={500} onChange={onGranularityChange} className="w-16" />
         </div>
-        <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>10</span><span>300</span></div>
+        <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>10</span><span>500</span></div>
       </div>
 
       {/* Threshold */}
