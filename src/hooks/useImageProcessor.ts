@@ -8,7 +8,7 @@ import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 50;
-const DEFAULT_THRESHOLD = 30;
+const DEFAULT_THRESHOLD = 0;  // Start with no merging — user can increase
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
 function buildPalette(_colorSystem: ColorSystem): PaletteColor[] {
@@ -93,8 +93,10 @@ export function useImageProcessor() {
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
     // Step 2: Background removal
     data = removeBackground(data, M, N);
-    // Step 3: Merge similar colors by frequency (THE key algorithm from reference)
-    data = mergeSimilarColors(data, M, N, palette, threshold);
+    // Step 3: Merge similar colors ONLY when threshold > 0 (user controls via slider)
+    if (threshold > 0) {
+      data = mergeSimilarColors(data, M, N, palette, threshold);
+    }
     // Step 4: AI mode extra cleanup (light isolated-pixel removal)
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
