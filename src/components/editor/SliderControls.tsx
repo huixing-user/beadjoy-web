@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 
 type Props = {
-  granularity: number; threshold: number; maxW: number; maxH: number;
+  granularity: number; threshold: number; maxGrid: number;
+  gridN: number; gridM: number;
   onGranularityChange: (v: number) => void; onThresholdChange: (v: number) => void;
-  onMaxWChange: (v: number) => void; onMaxHChange: (v: number) => void;
+  onMaxGridChange: (v: number) => void;
 };
 
 function IntInput({ value, min, max, onChange, className }: {
@@ -27,7 +28,6 @@ function IntInput({ value, min, max, onChange, className }: {
       value={text}
       onChange={e => {
         const raw = e.target.value;
-        // Allow empty or digits-only during editing
         if (raw === '' || /^\d*$/.test(raw)) setText(raw);
       }}
       onBlur={commit}
@@ -37,7 +37,7 @@ function IntInput({ value, min, max, onChange, className }: {
   );
 }
 
-export default function SliderControls({ granularity, threshold, maxW, maxH, onGranularityChange, onThresholdChange, onMaxWChange, onMaxHChange }: Props) {
+export default function SliderControls({ granularity, threshold, maxGrid, gridN, gridM, onGranularityChange, onThresholdChange, onMaxGridChange }: Props) {
   return (
     <div className="space-y-4">
       {/* Granularity */}
@@ -64,30 +64,24 @@ export default function SliderControls({ granularity, threshold, maxW, maxH, onG
         <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>0</span><span>100</span></div>
       </div>
 
-      {/* Canvas size */}
+      {/* Max Grid */}
       <div>
-        <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">📐 画布尺寸 (宽×高)</label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="flex items-center gap-1">
-              <IntInput value={maxW} min={10} max={500} onChange={onMaxWChange} className="w-full" />
-              <span className="text-xs text-[#2D3436]/40">宽</span>
-            </div>
-            <input type="range" min={10} max={500} value={maxW}
-              onChange={e => onMaxWChange(Number(e.target.value))}
-              className="w-full accent-[#C3B1E1] h-1.5 rounded-full cursor-pointer mt-1" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1">
-              <IntInput value={maxH} min={10} max={500} onChange={onMaxHChange} className="w-full" />
-              <span className="text-xs text-[#2D3436]/40">高</span>
-            </div>
-            <input type="range" min={10} max={500} value={maxH}
-              onChange={e => onMaxHChange(Number(e.target.value))}
-              className="w-full accent-[#C3B1E1] h-1.5 rounded-full cursor-pointer mt-1" />
-          </div>
+        <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">📐 最大画布宽度</label>
+        <div className="flex items-center gap-2">
+          <input type="range" min={10} max={500} value={maxGrid}
+            onChange={e => onMaxGridChange(Number(e.target.value))}
+            className="flex-1 accent-[#C3B1E1] h-2 rounded-full cursor-pointer" />
+          <IntInput value={maxGrid} min={10} max={500} onChange={onMaxGridChange} className="w-16" />
         </div>
-        <p className="text-[10px] text-[#2D3436]/30 mt-0.5">限制格子数上限，适合不同店铺的画布</p>
+        <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>10</span><span>500</span></div>
+      </div>
+
+      {/* Current grid size (read-only indicator) */}
+      <div className="bg-gray-50 rounded-xl px-3 py-2">
+        <p className="text-xs text-[#2D3436]/50">
+          当前画布: <span className="font-semibold text-[#2D3436]">{gridN}×{gridM}</span> 格
+          <span className="block text-[10px] mt-0.5">高度按图片比例自动计算</span>
+        </p>
       </div>
     </div>
   );
