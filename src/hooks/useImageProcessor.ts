@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { EditorMode, ColorSystem, PaletteColor, MappedPixel, ColorCount, ProcessingState } from '@/types/pixelation';
 import { calculatePixelGrid, hexToRgb } from '@/utils/pixelation';
 import { aiOptimize } from '@/utils/aiOptimizer';
+import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
 
 const DEFAULT_GRANULARITY = 50;
@@ -11,10 +12,6 @@ const DEFAULT_THRESHOLD = 30;
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
 function buildPalette(_colorSystem: ColorSystem): PaletteColor[] {
-  // Use hex as key (matches reference project's approach).
-  // This is CRITICAL — using brand-specific keys (e.g. A01) prevents
-  // findClosestPaletteColor from working correctly across the full palette
-  // because duplicate hex values get clobbered and color distances break.
   const mapping = colorSystemMapping as Record<string, Record<string, string>>;
   const seen = new Set<string>();
   return Object.entries(mapping)
@@ -59,21 +56,30 @@ export function useImageProcessor() {
   const [state, setState] = useState<ProcessingState>({
     mappedPixelData: null, gridDimensions: null, colorCounts: null, totalBeadCount: 0,
     mode: 'quick', granularity: DEFAULT_GRANULARITY, similarityThreshold: DEFAULT_THRESHOLD,
-    selectedColorSystem: 'MARD', paletteSize: 168,
+    selectedColorSystem: 'MARD', paletteSize: 168, maxGrid: 200,
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
 
-  const compute = useCallback((imageElement: HTMLImageElement, overrides?: { mode?: EditorMode; granularity?: number; threshold?: number }) => {
+  const compute = useCallback((imageElement: HTMLImageElement, overrides?: { mode?: EditorMode; granularity?: number; threshold?: number; maxGrid?: number }) => {
     setIsProcessing(true);
     const mode = overrides?.mode ?? state.mode;
     const granularity = overrides?.granularity ?? state.granularity;
     const threshold = overrides?.threshold ?? state.similarityThreshold;
+    const maxG = overrides?.maxGrid ?? state.maxGrid;
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    const N = granularity;
-    const M = Math.max(1, Math.round(N * (imgH / imgW)));
+    // Clamp: wider side ≤ maxGrid
+    const aspect = imgH / Math.max(1, imgW);
+    let N: number, M: number;
+    if (imgW >= imgH) {
+      N = Math.min(granularity, maxG);
+      M = Math.max(1, Math.round(N * aspect));
+    } else {
+      M = Math.min(Math.round(granularity * (1 / Math.max(0.01, aspect))), maxG);
+      N = Math.max(1, Math.round(M / Math.max(0.01, aspect)));
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
@@ -83,10 +89,13 @@ export function useImageProcessor() {
     const palette = buildPalette(state.selectedColorSystem);
     const fallback: PaletteColor = palette[0] || { key: '?', hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 } };
 
+    // Step 1: Initial color mapping (dominant per cell)
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
+    // Step 2: Background removal
     data = removeBackground(data, M, N);
-
-    // AI mode extra cleanup
+    // Step 3: Merge similar colors by frequency (THE key algorithm from reference)
+    data = mergeSimilarColors(data, M, N, palette, threshold);
+    // Step 4: AI mode extra cleanup (light isolated-pixel removal)
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
       data = result.optimizedData;
@@ -102,14 +111,15 @@ export function useImageProcessor() {
       counters[hex].count++;
     }));
 
-    setState(prev => ({ ...prev, mappedPixelData: data, gridDimensions: { N, M }, colorCounts: counters, totalBeadCount: total, mode, granularity, similarityThreshold: threshold }));
+    setState(prev => ({ ...prev, mappedPixelData: data, gridDimensions: { N, M }, colorCounts: counters, totalBeadCount: total, mode, granularity, similarityThreshold: threshold, maxGrid: maxG }));
     setIsProcessing(false);
-  }, [state.mode, state.granularity, state.similarityThreshold, state.selectedColorSystem]);
+  }, [state.mode, state.granularity, state.similarityThreshold, state.selectedColorSystem, state.maxGrid]);
 
   const setMode = useCallback((mode: EditorMode) => setState(p => ({ ...p, mode })), []);
   const setGranularity = useCallback((g: number) => setState(p => ({ ...p, granularity: g })), []);
   const setThreshold = useCallback((t: number) => setState(p => ({ ...p, similarityThreshold: t })), []);
   const setColorSystem = useCallback((cs: ColorSystem) => setState(p => ({ ...p, selectedColorSystem: cs })), []);
+  const setMaxGrid = useCallback((g: number) => setState(p => ({ ...p, maxGrid: g })), []);
 
-  return { state, isProcessing, processImage: compute, setMode, setGranularity, setThreshold, setColorSystem };
+  return { state, isProcessing, processImage: compute, setMode, setGranularity, setThreshold, setColorSystem, setMaxGrid };
 }

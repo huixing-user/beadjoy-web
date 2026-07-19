@@ -2,15 +2,11 @@ import { MappedPixel, PaletteColor } from '@/types/pixelation';
 import { colorDistance } from '@/utils/pixelation';
 
 /**
- * Merge similar colors by frequency — the SAME algorithm from the reference project.
- * This is the key step that makes pixel art look clean and smooth.
- *
- * Strategy: sort colors by how many pixels use them (most-used first).
- * For each dominant color, find any lower-frequency colors whose Oklab
- * color distance is less than `threshold`. Merge them all into the dominant.
- *
- * The reference project uses threshold default 30 with granularity 50.
- * Higher threshold = more aggressive merging = fewer colors, smoother image.
+ * Merge similar colors by frequency — the EXACT algorithm from the reference
+ * project's pixelateImage().  This is the key step that makes pixel art look
+ * clean: sort colors by how many cells they occupy (most-used first), then for
+ * each dominant colour merge in lower-frequency colours whose Oklab distance
+ * is less than `threshold`.
  */
 export function mergeSimilarColors(
   data: MappedPixel[][],
@@ -21,12 +17,12 @@ export function mergeSimilarColors(
 ): MappedPixel[][] {
   if (threshold <= 0) return data;
 
-  // Build lookup: key → rgb and key → hex
+  // Build lookup maps: key → RGB and key → {key, hex}
   const keyToRgb = new Map<string, { r: number; g: number; b: number }>();
-  const keyToHex = new Map<string, { key: string; hex: string }>();
+  const keyToColorData = new Map<string, { key: string; hex: string }>();
   for (const p of palette) {
     keyToRgb.set(p.key, p.rgb);
-    keyToHex.set(p.key, { key: p.key, hex: p.hex });
+    keyToColorData.set(p.key, { key: p.key, hex: p.hex });
   }
 
   // Count frequencies
@@ -58,7 +54,7 @@ export function mergeSimilarColors(
       const dist = colorDistance(domRgb, minorRgb);
       if (dist < threshold) {
         replaced.add(minorKey);
-        const dom = keyToHex.get(domKey);
+        const dom = keyToColorData.get(domKey);
         if (!dom) continue;
         for (let r = 0; r < M; r++)
           for (let c = 0; c < N; c++)
