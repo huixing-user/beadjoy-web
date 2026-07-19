@@ -120,14 +120,25 @@ export function useImageProcessor() {
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    // Reference project's approach: N = granularity (detail), M = aspect * N.
-    // W and H user inputs are treated as DIRECT output dimensions — they ARE N and M.
-    // "detail" supersampling only makes sense when we render at high resolution
-    // then downscale.  But downscale loses the precise per-cell bead mapping.
-    // Instead: just use the reference project's exact algorithm.
+    // Use the EXACT same algorithm as the reference project:
+    // N = detailLevel (granularity), M = round(N * aspectRatio)
+    // The maxW/maxH are just CAPS — if both are at default (200), they have no effect.
+    // If user reduces maxW below granularity, we use ONLY maxW as N.
     const imgAspect = imgH / Math.max(1, imgW);
-    const N = Math.min(granularity, maxW);
-    const M = Math.max(1, Math.round(N * imgAspect));
+    let N: number;
+    if (maxW < granularity || maxH < Math.round(granularity * imgAspect)) {
+      // User set a cap: N capped by maxW, but keep aspect
+      N = Math.min(granularity, maxW);
+    } else {
+      // Default: granularity is the actual detail
+      N = granularity;
+    }
+    let M = Math.max(1, Math.round(N * imgAspect));
+    // Apply maxH cap
+    if (maxH < M) {
+      M = maxH;
+      N = Math.max(1, Math.round(M / Math.max(0.001, imgAspect)));
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
