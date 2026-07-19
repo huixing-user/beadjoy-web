@@ -174,7 +174,7 @@ export default function LargePreview({ mappedPixelData, gridDimensions }: {
 
   const redrawModal = useCallback(() => {
     if (expanded && modalCanvasRef.current && mappedPixelData && gridDimensions) {
-      const largerCellSize = Math.max(8, Math.min(30, Math.floor(600 / gridDimensions.N)));
+      const largerCellSize = Math.max(4, Math.min(16, Math.floor(300 / gridDimensions.N)));
       drawBeads(modalCanvasRef.current, mappedPixelData, gridDimensions, largerCellSize, material);
     }
   }, [expanded, mappedPixelData, gridDimensions, material]);
