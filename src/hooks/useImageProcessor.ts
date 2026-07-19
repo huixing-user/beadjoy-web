@@ -56,23 +56,30 @@ export function useImageProcessor() {
   const [state, setState] = useState<ProcessingState>({
     mappedPixelData: null, gridDimensions: null, colorCounts: null, totalBeadCount: 0,
     mode: 'quick', granularity: DEFAULT_GRANULARITY, similarityThreshold: DEFAULT_THRESHOLD,
-    selectedColorSystem: 'MARD', paletteSize: 168, maxGrid: 200,
+    selectedColorSystem: 'MARD', paletteSize: 168, maxGridW: 200, maxGridH: 200,
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
 
-  const compute = useCallback((imageElement: HTMLImageElement, overrides?: { mode?: EditorMode; granularity?: number; threshold?: number; maxGrid?: number }) => {
+  const compute = useCallback((imageElement: HTMLImageElement, overrides?: { mode?: EditorMode; granularity?: number; threshold?: number; maxGridW?: number; maxGridH?: number }) => {
     setIsProcessing(true);
     const mode = overrides?.mode ?? state.mode;
     const granularity = overrides?.granularity ?? state.granularity;
     const threshold = overrides?.threshold ?? state.similarityThreshold;
-    const maxG = overrides?.maxGrid ?? state.maxGrid;
+    const maxW = overrides?.maxGridW ?? state.maxGridW;
+    const maxH = overrides?.maxGridH ?? state.maxGridH;
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
     const aspect = imgH / Math.max(1, imgW);
-    const N = Math.min(granularity, maxG);
-    const M = Math.max(1, Math.round(N * aspect));
+    // Width limited by granularity and maxW; height limited by maxH
+    let N = Math.min(granularity, maxW);
+    let M = Math.max(1, Math.round(N * aspect));
+    // Clamp height
+    if (M > maxH) {
+      M = maxH;
+      N = Math.max(1, Math.round(M / Math.max(0.01, aspect)));
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
@@ -107,15 +114,16 @@ export function useImageProcessor() {
       counters[hex].count++;
     }));
 
-    setState(prev => ({ ...prev, mappedPixelData: data, gridDimensions: { N, M }, colorCounts: counters, totalBeadCount: total, mode, granularity, similarityThreshold: threshold, maxGrid: maxG }));
+    setState(prev => ({ ...prev, mappedPixelData: data, gridDimensions: { N, M }, colorCounts: counters, totalBeadCount: total, mode, granularity, similarityThreshold: threshold, maxGridW: maxW, maxGridH: maxH }));
     setIsProcessing(false);
-  }, [state.mode, state.granularity, state.similarityThreshold, state.selectedColorSystem, state.maxGrid]);
+  }, [state.mode, state.granularity, state.similarityThreshold, state.selectedColorSystem, state.maxGridW, state.maxGridH]);
 
   const setMode = useCallback((mode: EditorMode) => setState(p => ({ ...p, mode })), []);
   const setGranularity = useCallback((g: number) => setState(p => ({ ...p, granularity: g })), []);
   const setThreshold = useCallback((t: number) => setState(p => ({ ...p, similarityThreshold: t })), []);
   const setColorSystem = useCallback((cs: ColorSystem) => setState(p => ({ ...p, selectedColorSystem: cs })), []);
-  const setMaxGrid = useCallback((g: number) => setState(p => ({ ...p, maxGrid: g })), []);
+  const setMaxGridW = useCallback((w: number) => setState(p => ({ ...p, maxGridW: w })), []);
+  const setMaxGridH = useCallback((h: number) => setState(p => ({ ...p, maxGridH: h })), []);
 
-  return { state, isProcessing, processImage: compute, setMode, setGranularity, setThreshold, setColorSystem, setMaxGrid };
+  return { state, isProcessing, processImage: compute, setMode, setGranularity, setThreshold, setColorSystem, setMaxGridW, setMaxGridH };
 }

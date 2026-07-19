@@ -22,7 +22,7 @@ import ImageCropper from '@/components/editor/ImageCropper';
 
 function EditorContent() {
   const searchParams = useSearchParams();
-  const { state, isProcessing, processImage, setMode, setGranularity, setThreshold, setColorSystem, setMaxGrid } = useImageProcessor();
+  const { state, isProcessing, processImage, setMode, setGranularity, setThreshold, setColorSystem, setMaxGridW, setMaxGridH } = useImageProcessor();
   const { addItem } = useGallery();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [excludedColors, setExcludedColors] = useState<Set<string>>(new Set());
@@ -79,10 +79,15 @@ function EditorContent() {
     if (imgRef.current) processImage(imgRef.current, { threshold: t });
   }, [setThreshold, processImage]);
 
-  const handleMaxGridChange = useCallback((g: number) => {
-    setMaxGrid(g);
-    if (imgRef.current) processImage(imgRef.current, { maxGrid: g });
-  }, [setMaxGrid, processImage]);
+  const handleMaxWChange = useCallback((w: number) => {
+    setMaxGridW(w);
+    if (imgRef.current) processImage(imgRef.current, { maxGridW: w });
+  }, [setMaxGridW, processImage]);
+
+  const handleMaxHChange = useCallback((h: number) => {
+    setMaxGridH(h);
+    if (imgRef.current) processImage(imgRef.current, { maxGridH: h });
+  }, [setMaxGridH, processImage]);
 
   const handleToggleExclude = (hex: string) => {
     setExcludedColors(prev => { const n = new Set(prev); n.has(hex) ? n.delete(hex) : n.add(hex); return n; });
@@ -153,13 +158,14 @@ function EditorContent() {
               onSystemChange={setColorSystem} onSizeChange={() => {}} />
             <SliderControls
               granularity={state.granularity} threshold={state.similarityThreshold}
-              maxGrid={state.maxGrid}
+              maxW={state.maxGridW} maxH={state.maxGridH}
               gridN={state.gridDimensions?.N ?? 0}
               gridM={state.gridDimensions?.M ?? 0}
               onGranularityChange={handleGranularityChange}
               onThresholdChange={handleThresholdChange}
-              onMaxGridChange={handleMaxGridChange} />
-            <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} cellSize={16} />
+              onMaxWChange={handleMaxWChange}
+              onMaxHChange={handleMaxHChange} />
+            <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} />
             <ColorStatsPanel colorCounts={state.colorCounts} excludedColors={excludedColors} onToggleExclude={handleToggleExclude} />
             <ExportButtons hasData={!!state.mappedPixelData}
               onDownload={() => state.mappedPixelData && state.gridDimensions && state.colorCounts &&
