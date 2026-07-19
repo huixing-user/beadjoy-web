@@ -91,12 +91,13 @@ export function useImageProcessor() {
 
     // Step 1: Initial color mapping (dominant per cell)
     let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
-    // Step 2: Background removal
-    data = removeBackground(data, M, N);
-    // Step 3: Merge similar colors ONLY when threshold > 0 (user controls via slider)
+    // Step 2: Merge similar colors FIRST (match reference project order!)
+    // Merge uses key-based lookups which need the raw pixelGrid keys
     if (threshold > 0) {
       data = mergeSimilarColors(data, M, N, palette, threshold);
     }
+    // Step 3: Background removal AFTER merge (match reference project order)
+    data = removeBackground(data, M, N);
     // Step 4: AI mode extra cleanup (light isolated-pixel removal)
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
