@@ -165,10 +165,10 @@ function PreviewContent({ mappedPixelData, gridDimensions, material, cellSize = 
 }
 
 // ---- Main component ----
-export default function LargePreview({ mappedPixelData, gridDimensions }: {
-  mappedPixelData: MappedPixel[][] | null; gridDimensions: GridDimensions | null;
+export default function LargePreview({ mappedPixelData, gridDimensions, showInline = true }: {
+  mappedPixelData: MappedPixel[][] | null; gridDimensions: GridDimensions | null; showInline?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!showInline);
   const [material, setMaterial] = useState<Material>('bead');
   const modalCanvasRef = useRef<HTMLCanvasElement>(null);
 
