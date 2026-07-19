@@ -21,5 +21,6 @@ export interface ProcessingState {
   similarityThreshold: number;
   selectedColorSystem: ColorSystem;
   paletteSize: number;
-  maxGrid: number;
+  maxGridW: number;
+  maxGridH: number;
 }

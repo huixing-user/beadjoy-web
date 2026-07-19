@@ -22,7 +22,7 @@ import ImageCropper from '@/components/editor/ImageCropper';
 
 function EditorContent() {
   const searchParams = useSearchParams();
-  const { state, isProcessing, processImage, setMode, setGranularity, setThreshold, setColorSystem, setMaxGrid } = useImageProcessor();
+  const { state, isProcessing, processImage, setMode, setGranularity, setThreshold, setColorSystem, setMaxW, setMaxH } = useImageProcessor();
   const { addItem } = useGallery();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [excludedColors, setExcludedColors] = useState<Set<string>>(new Set());
@@ -79,10 +79,15 @@ function EditorContent() {
     if (imgRef.current) processImage(imgRef.current, { threshold: t });
   }, [setThreshold, processImage]);
 
-  const handleMaxGridChange = useCallback((g: number) => {
-    setMaxGrid(g);
-    if (imgRef.current) processImage(imgRef.current, { maxGrid: g });
-  }, [setMaxGrid, processImage]);
+  const handleMaxWChange = useCallback((w: number) => {
+    setMaxW(w);
+    if (imgRef.current) processImage(imgRef.current, { maxGridW: w });
+  }, [setMaxW, processImage]);
+
+  const handleMaxHChange = useCallback((h: number) => {
+    setMaxH(h);
+    if (imgRef.current) processImage(imgRef.current, { maxGridH: h });
+  }, [setMaxH, processImage]);
 
   const handleToggleExclude = (hex: string) => {
     setExcludedColors(prev => { const n = new Set(prev); n.has(hex) ? n.delete(hex) : n.add(hex); return n; });
@@ -151,10 +156,13 @@ function EditorContent() {
           <RightPanel>
             <PaletteSelector selectedSystem={state.selectedColorSystem} paletteSize={state.paletteSize}
               onSystemChange={setColorSystem} onSizeChange={() => {}} />
-            <SliderControls granularity={state.granularity} threshold={state.similarityThreshold} maxGrid={state.maxGrid}
+            <SliderControls
+              granularity={state.granularity} threshold={state.similarityThreshold}
+              maxW={state.maxGridW} maxH={state.maxGridH}
               onGranularityChange={handleGranularityChange}
               onThresholdChange={handleThresholdChange}
-              onMaxGridChange={handleMaxGridChange} />
+              onMaxWChange={handleMaxWChange}
+              onMaxHChange={handleMaxHChange} />
             <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} cellSize={16} />
             <ColorStatsPanel colorCounts={state.colorCounts} excludedColors={excludedColors} onToggleExclude={handleToggleExclude} />
             <ExportButtons hasData={!!state.mappedPixelData}
