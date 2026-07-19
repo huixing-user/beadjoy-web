@@ -23,8 +23,8 @@ function drawBeads(
 ) {
   const { N, M } = gridDimensions;
   const cs = cellSize;
-  const gap = material === 'flat' ? 0 : Math.max(1, Math.floor(cs * 0.12));
-  const radius = material === 'flat' ? 0 : (material === 'melted' ? Math.floor(cs * 0.15) : Math.floor(cs * 0.3));
+  const gap = material === 'flat' ? 0 : Math.max(1, Math.floor(cs * 0.10));
+  const radius = material === 'flat' ? 0 : (material === 'melted' ? Math.floor(cs * 0.12) : Math.floor(cs * 0.25));
 
   canvas.width = N * (cs + gap) + gap;
   canvas.height = M * (cs + gap) + gap;
