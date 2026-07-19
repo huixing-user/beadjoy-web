@@ -73,10 +73,20 @@ export function useImageProcessor() {
     const imgH = imageElement.naturalHeight;
     // granularity ALWAYS controls image detail (N).
     // maxW/maxH are just UPPER LIMITS for the grid size.
+    // BUT: never let N go below granularity when the limit is too small —
+    // granularity IS the actual detail, maxW only prevents exceeding a store's canvas size.
     const imgAspect = imgH / Math.max(1, imgW);
+    // N = what the user wants (granularity), clamped only by maxW
     let N = Math.min(granularity, maxW);
-    let M = Math.max(1, Math.round(N * imgAspect));
-    if (M > maxH) M = maxH;
+    let M = Math.round(N * imgAspect);
+    // Clamp height to maxH, then recompute N to keep aspect ratio
+    if (M > maxH) {
+      M = maxH;
+      N = Math.round(M / Math.max(0.001, imgAspect));
+    }
+    // FINAL SAFEGUARD: N and M are at least 1
+    N = Math.max(1, N);
+    M = Math.max(1, M);
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
