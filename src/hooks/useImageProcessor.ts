@@ -10,13 +10,21 @@ const DEFAULT_GRANULARITY = 50;
 const DEFAULT_THRESHOLD = 30;
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
 
-function buildPalette(colorSystem: ColorSystem): PaletteColor[] {
+function buildPalette(_colorSystem: ColorSystem): PaletteColor[] {
+  // Use hex as key (matches reference project's approach).
+  // This is CRITICAL — using brand-specific keys (e.g. A01) prevents
+  // findClosestPaletteColor from working correctly across the full palette
+  // because duplicate hex values get clobbered and color distances break.
   const mapping = colorSystemMapping as Record<string, Record<string, string>>;
+  const seen = new Set<string>();
   return Object.entries(mapping)
-    .map(([hex, m]) => {
-      const rgb = hexToRgb(hex);
+    .map(([hex]) => {
+      const upper = hex.toUpperCase();
+      if (seen.has(upper)) return null;
+      seen.add(upper);
+      const rgb = hexToRgb(upper);
       if (!rgb) return null;
-      return { key: m[colorSystem] || m.MARD, hex, rgb };
+      return { key: upper, hex: upper, rgb };
     })
     .filter((c): c is PaletteColor => c !== null);
 }
