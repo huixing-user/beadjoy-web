@@ -71,19 +71,20 @@ export function useImageProcessor() {
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    // N and M are directly controlled by maxW and maxH
-    // If they are equal to the default (200), use granularity and aspect ratio
-    // Otherwise, use exact values set by the user
+    // N and M are the ACTUAL pixel grid dimensions.
+    // granularity = the N value when user hasn't set custom W/H.
+    // If user sets custom W/H, those are used as N×M directly (granularity becomes irrelevant).
     const userSetW = overrides?.maxGridW !== undefined ? overrides.maxGridW : state.maxGridW;
     const userSetH = overrides?.maxGridH !== undefined ? overrides.maxGridH : state.maxGridH;
 
+    const imgAspect = imgH / Math.max(1, imgW);
     let N: number, M: number;
     if (userSetW === 200 && userSetH === 200) {
-      // Default: use granularity + aspect ratio
-      N = Math.min(granularity, userSetW);
-      M = Math.max(1, Math.round(N * (imgH / Math.max(1, imgW))));
+      // Default: granularity drives N, aspect drives M
+      N = granularity;
+      M = Math.max(1, Math.round(N * imgAspect));
     } else {
-      // User has customized: use exact values
+      // User set custom size: use it directly
       N = userSetW;
       M = userSetH;
     }
