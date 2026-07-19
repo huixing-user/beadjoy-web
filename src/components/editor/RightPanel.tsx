@@ -5,13 +5,15 @@ import React, { useState } from 'react';
 export default function RightPanel({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
-    <div className={`relative bg-white rounded-3xl shadow-md shadow-pink-100/50 transition-all duration-300 overflow-hidden ${collapsed ? 'w-10' : 'w-72'}`}>
+    <div className={`relative bg-white rounded-3xl shadow-md shadow-pink-100/50 transition-all duration-300 ${collapsed ? 'w-auto px-3 py-4' : 'w-72'}`}>
       <button onClick={() => setCollapsed(!collapsed)}
-        className="absolute top-4 left-2 w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-pink-50 text-xs z-10 transition-colors"
+        className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 hover:bg-pink-50 text-xs z-10 transition-colors mb-3"
         title={collapsed ? '展开面板' : '折叠面板'}>
-        {collapsed ? '▶' : '◀'}
+        {collapsed ? '◀' : '▶ 收起'}
       </button>
-      <div className={`p-4 pt-10 space-y-6 ${collapsed ? 'hidden' : ''}`}>{children}</div>
+      <div className={`space-y-6 overflow-y-auto max-h-[calc(100vh-14rem)] pr-1 ${collapsed ? 'hidden' : ''}`}>
+        {children}
+      </div>
     </div>
   );
 }
