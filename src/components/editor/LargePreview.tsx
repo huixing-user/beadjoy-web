@@ -49,16 +49,13 @@ function drawBeads(
 
       const color = cell?.color || '#FFFFFF';
 
-      // ----- Material rendering -----
       if (material === 'flat') {
-        // Simple flat squares (like a pixel art printout)
         ctx.fillStyle = color;
         ctx.fillRect(x, y, cs, cs);
         continue;
       }
 
       if (material === 'bead') {
-        // Bead: round rect + gradient + highlight dot
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.roundRect(x, y, cs, cs, radius);
@@ -82,19 +79,15 @@ function drawBeads(
       }
 
       if (material === 'melted') {
-        // Melted/ironed: wider, softer beads that slightly "spill" into neighbours
         const spread = Math.max(1, Math.floor(cs * 0.08));
-        const mx = x - spread;
-        const my = y - spread;
-        const mw = cs + spread * 2;
-        const mh = cs + spread * 2;
+        const mx = x - spread; const my = y - spread;
+        const mw = cs + spread * 2; const mh = cs + spread * 2;
 
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.roundRect(mx, my, mw, mh, radius);
         ctx.fill();
 
-        // Soft top-down lighting with a subtle inner shadow
         const g = ctx.createRadialGradient(x + cs * 0.3, y + cs * 0.3, cs * 0.1, x + cs / 2, y + cs / 2, cs * 0.8);
         g.addColorStop(0, 'rgba(255,255,255,0.25)');
         g.addColorStop(0.6, 'rgba(0,0,0,0.05)');
@@ -104,7 +97,6 @@ function drawBeads(
         ctx.roundRect(mx, my, mw, mh, radius);
         ctx.fill();
 
-        // Tiny center glow simulating ironed plastic
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
         ctx.beginPath();
         const dotR = Math.max(1, cs * 0.08);
@@ -114,11 +106,9 @@ function drawBeads(
       }
 
       if (material === 'mini') {
-        // Mini beads: small with more gap, very round
         const miniCs = cs * 0.7;
         const offset = (cs - miniCs) / 2;
-        const mx = x + offset;
-        const my = y + offset;
+        const mx = x + offset; const my = y + offset;
 
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -129,116 +119,63 @@ function drawBeads(
         ctx.beginPath();
         ctx.arc(mx + miniCs * 0.3, my + miniCs * 0.3, miniCs * 0.12, 0, Math.PI * 2);
         ctx.fill();
-        continue;
       }
     }
   }
 }
 
-// ---- Small preview ----
-function PreviewContent({ mappedPixelData, gridDimensions, material, cellSize = 14 }: {
-  mappedPixelData: MappedPixel[][] | null; gridDimensions: GridDimensions | null; material: Material; cellSize?: number;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !mappedPixelData || !gridDimensions) return;
-    drawBeads(canvas, mappedPixelData, gridDimensions, cellSize, material);
-  }, [mappedPixelData, gridDimensions, cellSize, material]);
-
-  if (!mappedPixelData || !gridDimensions) {
-    return (
-      <div className="flex items-center justify-center h-32 text-[#2D3436]/30 text-sm">
-        <span>处理图片后预览</span>
-      </div>
-    );
-  }
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="max-w-full cursor-pointer hover:scale-[1.02] transition-transform"
-      style={{ imageRendering: 'auto' }}
-    />
-  );
-}
-
 // ---- Main component ----
-export default function LargePreview({ mappedPixelData, gridDimensions, showInline = true }: {
-  mappedPixelData: MappedPixel[][] | null; gridDimensions: GridDimensions | null; showInline?: boolean;
+export default function LargePreview({
+  mappedPixelData, gridDimensions, showInline = true, onClose,
+}: {
+  mappedPixelData: MappedPixel[][] | null; gridDimensions: GridDimensions | null; showInline?: boolean; onClose?: () => void;
 }) {
   const [expanded, setExpanded] = useState(!showInline);
   const [material, setMaterial] = useState<Material>('bead');
-  const modalCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const redrawModal = useCallback(() => {
-    if (expanded && modalCanvasRef.current && mappedPixelData && gridDimensions) {
-      const largerCellSize = Math.max(4, Math.min(16, Math.floor(300 / gridDimensions.N)));
-      drawBeads(modalCanvasRef.current, mappedPixelData, gridDimensions, largerCellSize, material);
+  const cellSize = Math.max(4, Math.min(14, Math.floor(300 / (gridDimensions?.N || 50))));
+
+  useEffect(() => {
+    if (expanded && canvasRef.current && mappedPixelData && gridDimensions) {
+      drawBeads(canvasRef.current, mappedPixelData, gridDimensions, cellSize, material);
     }
-  }, [expanded, mappedPixelData, gridDimensions, material]);
+  }, [expanded, mappedPixelData, gridDimensions, cellSize, material]);
 
-  useEffect(() => { redrawModal(); }, [redrawModal]);
+  const handleClose = () => {
+    setExpanded(false);
+    onClose?.();
+  };
+
+  if (!mappedPixelData || !gridDimensions) return null;
 
   return (
-    <>
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-[#2D3436]">🔮 拼豆效果预览</h3>
-        <div
-          className="overflow-auto max-h-[200px] rounded-2xl border border-gray-100 bg-[#f0f0f0] p-2 cursor-pointer"
-          onClick={() => setExpanded(true)}
-          title="点击放大预览"
-        >
-          <PreviewContent mappedPixelData={mappedPixelData} gridDimensions={gridDimensions} material={material} cellSize={14} />
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={handleClose}>
+      <div className="bg-white rounded-3xl p-6 max-w-[90vw] max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-[#2D3436]">🔮 拼豆效果预览</h2>
+          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-sm">✕</button>
         </div>
-        <p className="text-[10px] text-[#2D3436]/30 text-center">点击预览图可放大查看</p>
+
+        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-2xl p-1">
+          {MATERIALS.map(m => (
+            <button
+              key={m.key}
+              onClick={() => setMaterial(m.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                material === m.key ? 'bg-white text-[#FF6B9D] shadow-sm' : 'text-[#2D3436]/50 hover:text-[#2D3436]/80'
+              }`}
+            >
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+
+        <canvas ref={canvasRef} className="max-w-full rounded-xl" style={{ imageRendering: 'auto' }} />
+        <p className="text-xs text-[#2D3436]/40 mt-3 text-center">
+          {gridDimensions.N}×{gridDimensions.M} · {material === 'melted' ? '熨烫效果' : material === 'bead' ? '珠子效果' : material === 'mini' ? '迷你珠子' : '平面效果'}
+        </p>
       </div>
-
-      {/* Expanded modal */}
-      {expanded && (
-        <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setExpanded(false)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 max-w-[90vw] max-h-[90vh] overflow-auto shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#2D3436]">🔮 拼豆效果预览</h2>
-              <button
-                onClick={() => setExpanded(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Material selector */}
-            <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-2xl p-1">
-              {MATERIALS.map(m => (
-                <button
-                  key={m.key}
-                  onClick={() => setMaterial(m.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    material === m.key ? 'bg-white text-[#FF6B9D] shadow-sm' : 'text-[#2D3436]/50 hover:text-[#2D3436]/80'
-                  }`}
-                >
-                  {m.icon} {m.label}
-                </button>
-              ))}
-            </div>
-
-            <canvas ref={modalCanvasRef} className="max-w-full rounded-xl" style={{ imageRendering: 'auto' }} />
-            {mappedPixelData && gridDimensions && (
-              <p className="text-xs text-[#2D3436]/40 mt-3 text-center">
-                {gridDimensions.N}×{gridDimensions.M} · {material === 'melted' ? '熨烫效果' : material === 'bead' ? '珠子效果' : material === 'mini' ? '迷你珠子' : '平面效果'}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

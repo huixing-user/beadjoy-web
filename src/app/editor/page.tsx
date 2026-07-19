@@ -179,15 +179,7 @@ function EditorContent() {
 
       {/* Preview modal — only shown when button clicked */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
-          <div className="bg-white rounded-3xl p-6 max-w-[95vw] max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#2D3436]">🔮 拼豆效果预览</h2>
-              <button onClick={() => setShowPreview(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-sm">✕</button>
-            </div>
-            <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} showInline={false} />
-          </div>
-        </div>
+        <LargePreview mappedPixelData={state.mappedPixelData} gridDimensions={state.gridDimensions} showInline={false} onClose={() => setShowPreview(false)} />
       )}
 
       <StatusBar colorCount={state.colorCounts ? Object.keys(state.colorCounts).length : 0} totalBeadCount={state.totalBeadCount} gridDimensions={state.gridDimensions} />
