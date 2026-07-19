@@ -33,7 +33,7 @@ function IntInput({ value, min, max, onChange, className }: {
       }}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') commit(); }}
-      className={`text-center text-xs border border-gray-200 rounded-lg px-1 py-1.5 focus:border-[#FF6B9D] outline-none ${className || ''}`}
+      className={`text-center text-xs border border-gray-200 rounded-lg px-0 py-1.5 focus:border-[#FF6B9D] outline-none ${className || ''}`}
     />
   );
 }
@@ -43,61 +43,49 @@ export default function SliderControls({
   onGranularityChange, onThresholdChange, onMaxWChange, onMaxHChange,
 }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 text-[11px]">
       {/* Granularity */}
       <div>
-        <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">⚙️ 精细度</label>
-        <div className="flex items-center gap-2">
+        <label className="font-semibold text-[#2D3436] block mb-1">⚙️ 精细度</label>
+        <div className="flex items-center gap-1.5">
           <input type="range" min={10} max={500} value={granularity}
             onChange={e => onGranularityChange(Number(e.target.value))}
-            className="flex-1 accent-[#FF6B9D] h-2 rounded-full cursor-pointer" />
-          <IntInput value={granularity} min={10} max={500} onChange={onGranularityChange} className="w-16" />
+            className="flex-1 accent-[#FF6B9D] h-1.5 rounded-full cursor-pointer" />
+          <IntInput value={granularity} min={10} max={500} onChange={onGranularityChange} className="w-14" />
         </div>
-        <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>10</span><span>500</span></div>
       </div>
 
       {/* Threshold */}
       <div>
-        <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">🎯 颜色合并</label>
-        <div className="flex items-center gap-2">
+        <label className="font-semibold text-[#2D3436] block mb-1">🎯 颜色合并</label>
+        <div className="flex items-center gap-1.5">
           <input type="range" min={0} max={100} value={threshold}
             onChange={e => onThresholdChange(Number(e.target.value))}
-            className="flex-1 accent-[#4ECDC4] h-2 rounded-full cursor-pointer" />
-          <IntInput value={threshold} min={0} max={100} onChange={onThresholdChange} className="w-14" />
+            className="flex-1 accent-[#4ECDC4] h-1.5 rounded-full cursor-pointer" />
+          <IntInput value={threshold} min={0} max={100} onChange={onThresholdChange} className="w-12" />
         </div>
-        <div className="flex justify-between text-[10px] text-[#2D3436]/30 mt-0.5"><span>0</span><span>100</span></div>
       </div>
 
-      {/* Canvas size (width + height) */}
+      {/* Canvas size */}
       <div>
-        <label className="text-sm font-semibold text-[#2D3436] block mb-1.5">📐 画布尺寸 (宽×高)</label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <IntInput value={maxW} min={10} max={500} onChange={onMaxWChange} className="w-full" />
-              <span className="text-xs text-[#2D3436]/40">宽</span>
-            </div>
-            <input type="range" min={10} max={500} value={maxW}
-              onChange={e => onMaxWChange(Number(e.target.value))}
-              className="w-full accent-[#C3B1E1] h-1.5 rounded-full cursor-pointer" />
+        <label className="font-semibold text-[#2D3436] block mb-1">📐 画布尺寸 (宽×高)</label>
+        <div className="grid grid-cols-2 gap-1.5">
+          <div className="flex items-center gap-1">
+            <span className="text-[#2D3436]/40 w-4">W</span>
+            <IntInput value={maxW} min={10} max={500} onChange={onMaxWChange} className="flex-1" />
           </div>
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <IntInput value={maxH} min={10} max={500} onChange={onMaxHChange} className="w-full" />
-              <span className="text-xs text-[#2D3436]/40">高</span>
-            </div>
-            <input type="range" min={10} max={500} value={maxH}
-              onChange={e => onMaxHChange(Number(e.target.value))}
-              className="w-full accent-[#C3B1E1] h-1.5 rounded-full cursor-pointer" />
+          <div className="flex items-center gap-1">
+            <span className="text-[#2D3436]/40 w-4">H</span>
+            <IntInput value={maxH} min={10} max={500} onChange={onMaxHChange} className="flex-1" />
           </div>
         </div>
-        <p className="text-[10px] text-[#2D3436]/30 mt-1">限制格子数上限，适合不同店铺的画布</p>
+        <p className="text-[#2D3436]/30 mt-0.5">格子数上限</p>
       </div>
 
-      {/* Current grid size (read-only) */}
-      <div className="bg-gray-50 rounded-xl px-3 py-2">
-        <p className="text-xs text-[#2D3436]/50">
-          当前画布: <span className="font-semibold text-[#2D3436]">{gridN}×{gridM}</span> 格
+      {/* Current grid */}
+      <div className="bg-gray-50 rounded-lg px-2 py-1.5">
+        <p className="text-[#2D3436]/50">
+          当前: <span className="font-semibold text-[#2D3436]">{gridN}×{gridM}</span> 格
         </p>
       </div>
     </div>

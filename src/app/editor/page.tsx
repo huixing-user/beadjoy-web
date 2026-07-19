@@ -143,7 +143,7 @@ function EditorContent() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="p-3 flex-shrink-0"><LeftToolbar mode={state.mode} /></div>
+        <div className="p-2 flex-shrink-0"><LeftToolbar mode={state.mode} /></div>
 
         {isProcessing ? (
           <div className="flex-1 flex items-center justify-center"><BouncingBead text="正在处理图片..." /></div>
@@ -153,7 +153,7 @@ function EditorContent() {
             hoveredCell={hoveredCell} onCellHover={(r, c) => setHoveredCell({ row: r, col: c })} />
         )}
 
-        <div className="p-3 flex-shrink-0">
+        <div className="p-2 flex-shrink-0">
           <RightPanel>
             <PaletteSelector selectedSystem={state.selectedColorSystem} paletteSize={state.paletteSize}
               onSystemChange={setColorSystem} onSizeChange={() => {}} />
