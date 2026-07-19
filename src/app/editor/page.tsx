@@ -132,7 +132,7 @@ function EditorContent() {
         <ModeSwitcher currentMode={state.mode} onModeChange={handleModeChange} />
         <div className="flex items-center gap-2">
           <span className="text-xs text-[#2D3436]/40">🖱️ 滚轮缩放 · Ctrl+拖拽平移</span>
-          <button onClick={doRegenerate} className="text-sm text-[#FF6B9D] hover:underline">🔄 重新生成</button>
+          <button onClick={() => { if (imgRef.current) { processImage(imgRef.current); } }} className="px-3 py-1 bg-[#FF6B9D] text-white text-sm rounded-xl hover:bg-[#e55a8a] transition-colors">🔄 重新生成</button>
         </div>
       </div>
 
