@@ -59,6 +59,8 @@ function downscalePixelData(
 }
 
 function buildPalette(_colorSystem: ColorSystem): PaletteColor[] {
+  // Build palette from colorSystemMapping the same way the reference project does:
+  // key = hex, hex = hex.  The brand-specific key is only used for display labels.
   const mapping = colorSystemMapping as Record<string, Record<string, string>>;
   const seen = new Set<string>();
   return Object.entries(mapping)
@@ -118,24 +120,14 @@ export function useImageProcessor() {
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    // granularity controls image detail (N in the default/aspect mode).
-    // maxW/maxH are the user-set canvas limits (total bead grid).
-    // When user sets maxW < granularity, we STILL use granularity as N,
-    // but simultaneously render at high res then DOWNSCALE to fit maxW×maxH.
-    // This keeps sharpness even when shrinking.
+    // Reference project's approach: N = granularity (detail), M = aspect * N.
+    // W and H user inputs are treated as DIRECT output dimensions — they ARE N and M.
+    // "detail" supersampling only makes sense when we render at high resolution
+    // then downscale.  But downscale loses the precise per-cell bead mapping.
+    // Instead: just use the reference project's exact algorithm.
     const imgAspect = imgH / Math.max(1, imgW);
-
-    // Compute the "detail" N from granularity (unclamped by maxW)
-    let detailN = granularity;
-    let detailM = Math.max(1, Math.round(detailN * imgAspect));
-
-    // The actual output grid is capped by maxW/maxH
-    let N = Math.min(detailN, maxW);
-    let M = Math.max(1, Math.round(N * imgAspect));
-    if (M > maxH) {
-      M = maxH;
-      N = Math.max(1, Math.round(M / Math.max(0.001, imgAspect)));
-    }
+    const N = Math.min(granularity, maxW);
+    const M = Math.max(1, Math.round(N * imgAspect));
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
@@ -145,17 +137,13 @@ export function useImageProcessor() {
     const palette = buildPalette(state.selectedColorSystem);
     const fallback: PaletteColor = palette[0] || { key: '?', hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 } };
 
-    // Step 1: Initial color mapping — use DETAIL resolution (higher quality)
-    let data = calculatePixelGrid(ctx, imgW, imgH, detailN, detailM, palette, 'dominant' as any, fallback);
-    // Step 2: Merge colors at high resolution
+    // Step 1: Initial color mapping (exact reference algorithm)
+    let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
+    // Step 2: Merge colors (same as reference)
     if (threshold > 0) {
-      data = mergeSimilarColors(data, detailM, detailN, palette, threshold);
+      data = mergeSimilarColors(data, M, N, palette, threshold);
     }
-    // Step 3: Downscale to actual output grid (N×M) by taking dominant color per cell
-    if (detailN !== N || detailM !== M) {
-      data = downscalePixelData(data, detailN, detailM, N, M);
-    }
-    // Step 3: Background removal AFTER merge (match reference project order)
+    // Step 3: Background removal AFTER merge (matching reference order)
     data = removeBackground(data, M, N);
     // AI mode extra cleanup (light isolated-pixel removal)
     if (mode === 'ai') {
