@@ -71,14 +71,21 @@ export function useImageProcessor() {
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    const aspect = imgH / Math.max(1, imgW);
-    // Width limited by granularity and maxW; height limited by maxH
-    let N = Math.min(granularity, maxW);
-    let M = Math.max(1, Math.round(N * aspect));
-    // Clamp height
-    if (M > maxH) {
-      M = maxH;
-      N = Math.max(1, Math.round(M / Math.max(0.01, aspect)));
+    // N and M are directly controlled by maxW and maxH
+    // If they are equal to the default (200), use granularity and aspect ratio
+    // Otherwise, use exact values set by the user
+    const userSetW = overrides?.maxGridW !== undefined ? overrides.maxGridW : state.maxGridW;
+    const userSetH = overrides?.maxGridH !== undefined ? overrides.maxGridH : state.maxGridH;
+
+    let N: number, M: number;
+    if (userSetW === 200 && userSetH === 200) {
+      // Default: use granularity + aspect ratio
+      N = Math.min(granularity, userSetW);
+      M = Math.max(1, Math.round(N * (imgH / Math.max(1, imgW))));
+    } else {
+      // User has customized: use exact values
+      N = userSetW;
+      M = userSetH;
     }
 
     const canvas = document.createElement('canvas');
