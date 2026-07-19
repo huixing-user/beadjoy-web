@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { EditorMode, ColorSystem, PaletteColor, MappedPixel, ColorCount, ProcessingState } from '@/types/pixelation';
-import { calculatePixelGrid, hexToRgb } from '@/utils/pixelation';
+import { calculatePixelGrid, hexToRgb, colorDistance } from '@/utils/pixelation';
 import { aiOptimize } from '@/utils/aiOptimizer';
 import { mergeSimilarColors } from './mergeColors';
 import colorSystemMapping from '@/utils/colorSystemMapping.json';
@@ -10,6 +10,53 @@ import colorSystemMapping from '@/utils/colorSystemMapping.json';
 const DEFAULT_GRANULARITY = 200;  // higher default = more detail
 const DEFAULT_THRESHOLD = 0;  // Start with no merging — user can increase
 const BG_HEXES = new Set(['#FFFFFF','#FEFEFE','#FDFDFD','#FCFCFC','#FAFAFA','#F5F5F5','#EEEEEE','#E8E8E8']);
+
+/**
+ * Downscale high-res pixel data to fit a smaller target grid.
+ * Each target cell takes the dominant color from its source region.
+ */
+function downscalePixelData(
+  data: MappedPixel[][],
+  srcN: number, srcM: number,
+  dstN: number, dstM: number,
+): MappedPixel[][] {
+  const result: MappedPixel[][] = [];
+  const scaleX = srcN / dstN;
+  const scaleY = srcM / dstM;
+
+  for (let j = 0; j < dstM; j++) {
+    const row: MappedPixel[] = [];
+    for (let i = 0; i < dstN; i++) {
+      // Collect all source pixels that map to this output cell
+      const sx0 = Math.floor(i * scaleX);
+      const sy0 = Math.floor(j * scaleY);
+      const sx1 = Math.min(srcN, Math.ceil((i + 1) * scaleX));
+      const sy1 = Math.min(srcM, Math.ceil((j + 1) * scaleY));
+
+      // Count dominant colors in the source region
+      const counts = new Map<string, { key: string; color: string; count: number }>();
+      for (let sy = sy0; sy < sy1; sy++) {
+        for (let sx = sx0; sx < sx1; sx++) {
+          const cell = data[sy]?.[sx];
+          if (!cell || cell.isExternal) continue;
+          const k = cell.key;
+          if (!counts.has(k)) counts.set(k, { key: cell.key, color: cell.color, count: 0 });
+          counts.get(k)!.count++;
+        }
+      }
+
+      if (counts.size === 0) {
+        row.push({ key: 'TRANSPARENT', color: '#FFFFFF', isExternal: true });
+      } else {
+        let best = { key: '?', color: '#FFFFFF', count: 0 };
+        counts.forEach(v => { if (v.count > best.count) best = v; });
+        row.push({ key: best.key, color: best.color, isExternal: false });
+      }
+    }
+    result.push(row);
+  }
+  return result;
+}
 
 function buildPalette(_colorSystem: ColorSystem): PaletteColor[] {
   const mapping = colorSystemMapping as Record<string, Record<string, string>>;
@@ -71,22 +118,24 @@ export function useImageProcessor() {
 
     const imgW = imageElement.naturalWidth;
     const imgH = imageElement.naturalHeight;
-    // granularity ALWAYS controls image detail (N).
-    // maxW/maxH are just UPPER LIMITS for the grid size.
-    // BUT: never let N go below granularity when the limit is too small —
-    // granularity IS the actual detail, maxW only prevents exceeding a store's canvas size.
+    // granularity controls image detail (N in the default/aspect mode).
+    // maxW/maxH are the user-set canvas limits (total bead grid).
+    // When user sets maxW < granularity, we STILL use granularity as N,
+    // but simultaneously render at high res then DOWNSCALE to fit maxW×maxH.
+    // This keeps sharpness even when shrinking.
     const imgAspect = imgH / Math.max(1, imgW);
-    // N = what the user wants (granularity), clamped only by maxW
-    let N = Math.min(granularity, maxW);
-    let M = Math.round(N * imgAspect);
-    // Clamp height to maxH, then recompute N to keep aspect ratio
+
+    // Compute the "detail" N from granularity (unclamped by maxW)
+    let detailN = granularity;
+    let detailM = Math.max(1, Math.round(detailN * imgAspect));
+
+    // The actual output grid is capped by maxW/maxH
+    let N = Math.min(detailN, maxW);
+    let M = Math.max(1, Math.round(N * imgAspect));
     if (M > maxH) {
       M = maxH;
-      N = Math.round(M / Math.max(0.001, imgAspect));
+      N = Math.max(1, Math.round(M / Math.max(0.001, imgAspect)));
     }
-    // FINAL SAFEGUARD: N and M are at least 1
-    N = Math.max(1, N);
-    M = Math.max(1, M);
 
     const canvas = document.createElement('canvas');
     canvas.width = imgW; canvas.height = imgH;
@@ -96,16 +145,19 @@ export function useImageProcessor() {
     const palette = buildPalette(state.selectedColorSystem);
     const fallback: PaletteColor = palette[0] || { key: '?', hex: '#FFFFFF', rgb: { r: 255, g: 255, b: 255 } };
 
-    // Step 1: Initial color mapping (dominant per cell)
-    let data = calculatePixelGrid(ctx, imgW, imgH, N, M, palette, 'dominant' as any, fallback);
-    // Step 2: Merge similar colors FIRST (match reference project order!)
-    // Merge uses key-based lookups which need the raw pixelGrid keys
+    // Step 1: Initial color mapping — use DETAIL resolution (higher quality)
+    let data = calculatePixelGrid(ctx, imgW, imgH, detailN, detailM, palette, 'dominant' as any, fallback);
+    // Step 2: Merge colors at high resolution
     if (threshold > 0) {
-      data = mergeSimilarColors(data, M, N, palette, threshold);
+      data = mergeSimilarColors(data, detailM, detailN, palette, threshold);
+    }
+    // Step 3: Downscale to actual output grid (N×M) by taking dominant color per cell
+    if (detailN !== N || detailM !== M) {
+      data = downscalePixelData(data, detailN, detailM, N, M);
     }
     // Step 3: Background removal AFTER merge (match reference project order)
     data = removeBackground(data, M, N);
-    // Step 4: AI mode extra cleanup (light isolated-pixel removal)
+    // AI mode extra cleanup (light isolated-pixel removal)
     if (mode === 'ai') {
       const result = aiOptimize({ mappedPixelData: data, gridDimensions: { N, M }, palette });
       data = result.optimizedData;
